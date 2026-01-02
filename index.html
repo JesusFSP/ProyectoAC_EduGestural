@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IA Realidad Aumentada - Dual Hands</title>
+    <link rel="stylesheet" href="./styles/styles.css">
+</head>
+<body>
+
+    <div id="loading-model-message-container">
+        <h2>Cargando Modelo (Versión 1.0)...</h2>
+        <div class="spinner"></div>
+        <p>Por favor concede permiso a la cámara.</p>
+    </div>
+
+    <button id="menuToggle">☰ Opciones</button>
+
+    <div id="ui-container">
+        <h3>Figuras</h3>
+        <div class="grid-buttons">
+            <button class="figureButton active" data-id="Cubo">Cubo</button>
+            <button class="figureButton" data-id="Esfera">Esfera</button>
+            <button class="figureButton" data-id="Cono">Cono</button>
+            <button class="figureButton" data-id="Cilindro">Cilindro</button>
+            <button class="figureButton" data-id="Toro">Toro</button>
+            <button class="figureButton" data-id="Cuadrado">Plano</button>
+        </div>
+        <button class="figureButton full-width" data-id="None">Ocultar Todo</button>
+        
+        <hr>
+        
+        <div class="control-group">
+            <label for="colorPicker">🎨 Color:</label>
+            <input type="color" id="colorPicker" value="#00ff00">
+        </div>
+
+        <div class="control-group">
+            <label for="sizeSlider">📏 Tamaño:</label>
+            <input type="range" id="sizeSlider" min="10" max="200" value="50">
+        </div>
+
+        <div class="control-group">
+            <label for="rotationSlider">🔄 Velocidad Rotación:</label>
+            <input type="range" id="rotationSlider" min="0" max="20" value="5">
+        </div>
+
+        <div class="control-group-checkbox">
+            <input type="checkbox" id="pulseMode">
+            <label for="pulseMode">❤️ Modo Latido</label>
+        </div>
+
+        <div class="control-group-checkbox">
+            <input type="checkbox" id="dualMode" checked> <label for="dualMode">👐 Doble Mano</label>
+        </div>
+    </div>
+
+    <div class="canvas-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
+    <script src="./js/scripts.js"></script>
+
+</body>
+</html>
