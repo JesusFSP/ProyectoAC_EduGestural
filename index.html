@@ -17,8 +17,15 @@
 
     <button id="menuToggle">☰ Opciones</button>
 
+    <div id="quiz-panel" class="hidden">
+        <h2>🎮 Misión Actual</h2>
+        <p id="quiz-question">¡Prepara tus manos!</p>
+        <div id="quiz-score">Puntos: 0</div>
+        <div id="quiz-feedback"></div>
+    </div>
+
     <div id="ui-container">
-        <h3>Figuras</h3>
+        <h3>Figuras Geométricas</h3>
         <div class="grid-buttons">
             <button class="figureButton active" data-id="Cubo">Cubo</button>
             <button class="figureButton" data-id="Esfera">Esfera</button>
@@ -27,39 +34,41 @@
             <button class="figureButton" data-id="Toro">Toro</button>
             <button class="figureButton" data-id="Cuadrado">Plano</button>
         </div>
-        <button class="figureButton full-width" data-id="None">Ocultar Todo</button>
         
         <hr>
-        
+
         <div class="control-group">
-            <label for="colorPicker">🎨 Color:</label>
-            <input type="color" id="colorPicker" value="#00ff00">
+            <label>🎨 Apariencia:</label>
+            <div class="toggle-container">
+                <button id="modeColor" class="mode-btn active">Color Sólido</button>
+                <button id="modeTexture" class="mode-btn">Textura Real</button>
+            </div>
+            <input type="color" id="colorPicker" value="#00ff00" style="margin-top:5px;">
         </div>
 
         <div class="control-group">
-            <label for="sizeSlider">📏 Tamaño:</label>
+            <label for="sizeSlider">📏 Tamaño Base:</label>
             <input type="range" id="sizeSlider" min="10" max="200" value="50">
         </div>
 
         <div class="control-group">
-            <label for="rotationSlider">🔄 Velocidad Rotación:</label>
+            <label for="rotationSlider">🔄 Rotación:</label>
             <input type="range" id="rotationSlider" min="0" max="20" value="5">
         </div>
 
-        <div class="control-group-checkbox">
-            <input type="checkbox" id="pulseMode">
-            <label for="pulseMode">❤️ Modo Latido</label>
-        </div>
+        <hr>
 
         <div class="control-group-checkbox">
-            <input type="checkbox" id="dualMode" checked> <label for="dualMode">👐 Doble Mano</label>
+            <input type="checkbox" id="dualMode" checked>
+            <label for="dualMode">👐 Doble Mano</label>
         </div>
 
         <div class="control-group-checkbox">
             <input type="checkbox" id="gestureSize">
             <label for="gestureSize">📏 Estirar con Manos</label>
         </div>
-
+        
+        <button id="startQuizBtn" class="full-width highlight-btn">🎮 Iniciar Reto STEAM</button>
     </div>
 
     <div class="canvas-container"></div>

@@ -116,3 +116,71 @@ input[type="range"] {
     z-index: 200;
     text-align: center;
 }
+
+/* Estilos para el Modo Juego */
+#quiz-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px; /* Esquina superior derecha */
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    width: 250px;
+    text-align: center;
+    border: 2px solid #FFD700; /* Borde dorado */
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    transition: opacity 0.3s;
+}
+
+#quiz-panel.hidden {
+    display: none;
+}
+
+#quiz-question {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #4CAF50;
+    margin: 10px 0;
+}
+
+#quiz-score {
+    font-size: 1.5em;
+    font-family: 'Courier New', monospace;
+    color: #FFD700;
+}
+
+#quiz-feedback {
+    margin-top: 10px;
+    font-weight: bold;
+    height: 20px;
+}
+
+/* Botones de Modo (Color vs Textura) */
+.toggle-container {
+    display: flex;
+    gap: 5px;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 5px;
+    border: 1px solid #ccc;
+    background: #f0f0f0;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.mode-btn.active {
+    background: #2196F3;
+    color: white;
+    border-color: #1976D2;
+}
+
+.highlight-btn {
+    background-color: #FF5722 !important;
+    color: white !important;
+    font-weight: bold;
+    margin-top: 10px;
+    border: none;
+}
