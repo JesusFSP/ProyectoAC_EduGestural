@@ -1,14 +1,18 @@
 // --- VARIABLES GLOBALES ---
 let handPose, video, hands = [];
 let figureName = "Cubo"; 
-let paintLayer; // Capa para dibujar
+let paintLayer;
+
+// --- NUEVO LÍMITE: Variables para el cuadro delimitador ---
+let boundaryW, boundaryH; // Ancho y alto del límite
+let boundaryDepth = 400;  // Profundidad del límite
 
 // Texturas
 let textures = {};
 let useTexture = false;
 
 // Estado del Juego
-let gameMode = "NONE"; // 'NONE', 'QUIZ', 'SCULPT', 'PAINT'
+let gameMode = "NONE";
 let score = 0;
 const FIGURES = ["Cubo", "Esfera", "Cono", "Cilindro", "Toro"];
 
@@ -20,8 +24,8 @@ let quizTimer = 0;
 
 // SCULPT (Escultor)
 let targetSize = 0;
-let ghostX = 0; // Posición X del fantasma
-let ghostY = 0; // Posición Y del fantasma
+let ghostX = 0; 
+let ghostY = 0; 
 let sculptTolerance = 15;
 let sculptTimer = 0;
 
@@ -32,6 +36,9 @@ function setup() {
 
   paintLayer = createGraphics(windowWidth, windowHeight);
   paintLayer.clear();
+
+  // Inicializar tamaño del límite
+  calculateBoundaries();
 
   createTextures();
 
@@ -68,6 +75,16 @@ function draw() {
   }
   pop();
 
+  // --- NUEVO LÍMITE: Dibujar el cuadro amarillo ---
+  push();
+  noFill();
+  stroke(255, 255, 0); // Color Amarillo
+  strokeWeight(3);
+  // Como estamos en WEBGL, el centro es (0,0,0). Dibujamos la caja alrededor.
+  box(boundaryW, boundaryH, boundaryDepth);
+  pop();
+  // -------------------------------------------------
+
   // 2. LÓGICA DEL JUEGO ACTIVO
   switch (gameMode) {
       case "QUIZ": updateQuizGame(); break;
@@ -82,6 +99,8 @@ function draw() {
   let isDualMode = dualModeEl ? dualModeEl.checked : true;
   let isGestureSize = gestureSizeEl ? gestureSizeEl.checked : false;
   let gestureActive = false;
+  let currentSize = sizeSliderEl ? parseInt(sizeSliderEl.value) : 50;
+  let padding = currentSize / 2; // Margen para que la figura no se salga a medias
 
   // --- GESTO DE ESTIRAR ---
   if (isGestureSize && hands.length >= 2) {
@@ -96,8 +115,18 @@ function draw() {
 
           let midX = (p1.x + p2.x) / 2;
           let midY = (p1.y + p2.y) / 2;
-          let x = map(midX, 0, video.width, -width/2, width/2) * -1;
-          let y = map(midY, 0, video.height, -height/2, height/2);
+
+          // --- NUEVO LÍMITE: Mapeo restringido al Boundary ---
+          let halfBW = boundaryW / 2;
+          let halfBH = boundaryH / 2;
+          // Mapeamos al tamaño del boundary, no del ancho total
+          let x = map(midX, 0, video.width, -halfBW, halfBW) * -1;
+          let y = map(midY, 0, video.height, -halfBH, halfBH);
+          
+          // CONSTRAIN FINAL: Asegura que no se pase ni un pixel, considerando el tamaño de la figura
+          x = constrain(x, -halfBW + padding, halfBW - padding);
+          y = constrain(y, -halfBH + padding, halfBH - padding);
+          // ---------------------------------------------------
 
           drawFigure(x, y, 0);
           gestureActive = true; 
@@ -110,8 +139,17 @@ function draw() {
     for (let i = 0; i < handsToDraw; i++) {
         let hand = hands[i];
         if (hand.keypoints && hand.keypoints[9]) {
-            let x = map(hand.keypoints[9].x, 0, video.width, -width/2, width/2) * -1;
-            let y = map(hand.keypoints[9].y, 0, video.height, -height/2, height/2);
+            // --- NUEVO LÍMITE: Mapeo restringido individual ---
+            let halfBW = boundaryW / 2;
+            let halfBH = boundaryH / 2;
+            let x = map(hand.keypoints[9].x, 0, video.width, -halfBW, halfBW) * -1;
+            let y = map(hand.keypoints[9].y, 0, video.height, -halfBH, halfBH);
+            
+            // Constrain final con padding
+            x = constrain(x, -halfBW + padding, halfBW - padding);
+            y = constrain(y, -halfBH + padding, halfBH - padding);
+            // ---------------------------------------------------
+
             drawFigure(x, y, 0);
         }
     }
@@ -150,10 +188,9 @@ function updateQuizGame() {
     }
 }
 
-// JUEGO 2: ESCULTOR (MEJORADO)
+// JUEGO 2: ESCULTOR (Con límite)
 function startSculpt() {
     score = 0;
-    // Reseteamos tamaño al empezar para no empezar ganando por suerte
     document.getElementById("sizeSlider").value = 50; 
     updateHUD("📐 Escultor", "Aciertos: 0", "Iguala el tamaño del fantasma");
     nextSculptTarget();
@@ -162,10 +199,11 @@ function startSculpt() {
 function nextSculptTarget() {
     targetSize = random(30, 180);
     
-    // POSICIÓN ALEATORIA (Dentro de un margen seguro)
-    // width/3 asegura que no se vaya muy a los bordes donde están los menús
-    ghostX = random(-width/3, width/3); 
-    ghostY = random(-height/4, height/4); // Un poco más arriba/abajo pero sin tocar HUD
+    // --- NUEVO LÍMITE: Posición aleatoria DENTRO del cuadro ---
+    let margin = targetSize / 2 + 20; // Margen seguro
+    ghostX = random(-boundaryW/2 + margin, boundaryW/2 - margin);
+    ghostY = random(-boundaryH/2 + margin, boundaryH/2 - margin);
+    // ----------------------------------------------------------
     
     sculptTimer = 0;
     document.getElementById("hud-feedback").innerText = "¡Busca y Ajusta!";
@@ -173,11 +211,10 @@ function nextSculptTarget() {
 }
 
 function updateSculptGame() {
-    // Dibujar el "Fantasma" en su posición aleatoria
     push();
-    translate(ghostX, ghostY, 0); // Mover el fantasma
+    translate(ghostX, ghostY, 0); 
     noFill();
-    stroke(255, 215, 0); // Dorado
+    stroke(255, 215, 0);
     strokeWeight(2);
     rotateX(frameCount * 0.01);
     rotateY(frameCount * 0.01);
@@ -200,7 +237,6 @@ function updateSculptGame() {
             document.getElementById("hud-feedback").innerText = "¡PERFECTO! ✅";
             document.getElementById("hud-feedback").style.color = "#00ff00";
             
-            // ACCIÓN DE ÉXITO: Encoger figura al mínimo
             document.getElementById("sizeSlider").value = 20;
             
             nextSculptTarget(); 
@@ -210,33 +246,56 @@ function updateSculptGame() {
     }
 }
 
-// JUEGO 3: PINTOR (CORREGIDO)
+// JUEGO 3: PINTOR (Con límite 2D)
 function startPaint() {
     paintLayer.clear();
-    updateHUD("🎨 Pintor Aéreo", "", "Dibuja en el aire");
+    // Dibujar también el límite en la capa de pintura para referencia
+    paintLayer.push();
+    paintLayer.noFill();
+    paintLayer.stroke(255, 255, 0, 50); // Amarillo transparente
+    paintLayer.strokeWeight(2);
+    let marginX = (width - boundaryW) / 2;
+    let marginY = (height - boundaryH) / 2;
+    paintLayer.rect(marginX, marginY, boundaryW, boundaryH);
+    paintLayer.pop();
+    
+    updateHUD("🎨 Pintor Aéreo", "", "Dibuja dentro del cuadro");
 }
 
 function updatePaintGame() {
     if (hands.length > 0) {
         let hand = hands[0];
-        if (hand.keypoints && hand.keypoints[8]) { // Punta del índice
-            // CORRECCIÓN ESPEJO: Invertimos el mapeo de X
-            // Antes: map(..., width, 0) -> Ahora: map(..., 0, width)
-            // Esto alinea el dibujo con el video espejado
+        if (hand.keypoints && hand.keypoints[8]) { 
+            // Mapeo normal espejo
             let x = map(hand.keypoints[8].x, 0, video.width, 0, width); 
             let y = map(hand.keypoints[8].y, 0, video.height, 0, height);
             
-            let color = document.getElementById("colorPicker").value;
+            // --- NUEVO LÍMITE: Restringir pintura al cuadro 2D ---
+            // Calculamos los márgenes en 2D
+            let marginX = (width - boundaryW) / 2;
+            let marginY = (height - boundaryH) / 2;
             let size = parseInt(document.getElementById("sizeSlider").value) / 2;
+            
+            // Usamos constrain para que no pinte fuera
+            x = constrain(x, marginX + size, width - marginX - size);
+            y = constrain(y, marginY + size, height - marginY - size);
+            // ----------------------------------------------------
 
+            let color = document.getElementById("colorPicker").value;
             paintLayer.noStroke();
             paintLayer.fill(color);
-            paintLayer.ellipse(x, y, size, size);
+            paintLayer.ellipse(x, y, size*2, size*2);
         }
     }
 }
 
 // --- UTILIDADES ---
+
+// Función para calcular el tamaño del límite (80% de la pantalla)
+function calculateBoundaries() {
+    boundaryW = width * 0.8; // 80% del ancho
+    boundaryH = height * 0.8; // 80% del alto
+}
 
 function drawFigure(x, y, z) {
   let sizeEl = document.getElementById("sizeSlider");
@@ -351,4 +410,5 @@ function setupUI() {
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   paintLayer = createGraphics(windowWidth, windowHeight);
+  calculateBoundaries(); // Recalcular límites si cambia la ventana
 }
