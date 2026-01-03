@@ -10,22 +10,23 @@
 <body>
 
     <div id="loading-model-message-container">
-        <h2>Cargando Modelo (Versión 1.0)...</h2>
+        <h2>Cargando Suite de Juegos STEAM...</h2>
         <div class="spinner"></div>
         <p>Por favor concede permiso a la cámara.</p>
     </div>
 
-    <button id="menuToggle">☰ Opciones</button>
+    <button id="menuToggle" class="float-btn left">⚙️ Configuración</button>
+    <button id="gamesToggle" class="float-btn right">🎮 Minijuegos</button>
 
-    <div id="quiz-panel" class="hidden">
-        <h2>🎮 Misión Actual</h2>
-        <p id="quiz-question">¡Prepara tus manos!</p>
-        <div id="quiz-score">Puntos: 0</div>
-        <div id="quiz-feedback"></div>
+    <div id="hud-panel" class="hidden">
+        <h2 id="hud-title">Modo Libre</h2>
+        <p id="hud-instruction">Selecciona un juego en el menú derecho</p>
+        <div id="hud-score" class="hidden">Puntos: 0</div>
+        <div id="hud-feedback"></div>
     </div>
 
     <div id="ui-container">
-        <h3>Figuras Geométricas</h3>
+        <h3>Figuras</h3>
         <div class="grid-buttons">
             <button class="figureButton active" data-id="Cubo">Cubo</button>
             <button class="figureButton" data-id="Esfera">Esfera</button>
@@ -34,41 +35,46 @@
             <button class="figureButton" data-id="Toro">Toro</button>
             <button class="figureButton" data-id="Cuadrado">Plano</button>
         </div>
-        
         <hr>
-
         <div class="control-group">
             <label>🎨 Apariencia:</label>
             <div class="toggle-container">
-                <button id="modeColor" class="mode-btn active">Color Sólido</button>
-                <button id="modeTexture" class="mode-btn">Textura Real</button>
+                <button id="modeColor" class="mode-btn active">Color</button>
+                <button id="modeTexture" class="mode-btn">Textura</button>
             </div>
             <input type="color" id="colorPicker" value="#00ff00" style="margin-top:5px;">
         </div>
-
         <div class="control-group">
-            <label for="sizeSlider">📏 Tamaño Base:</label>
+            <label>📏 Tamaño Base:</label>
             <input type="range" id="sizeSlider" min="10" max="200" value="50">
         </div>
-
-        <div class="control-group">
-            <label for="rotationSlider">🔄 Rotación:</label>
-            <input type="range" id="rotationSlider" min="0" max="20" value="5">
-        </div>
-
-        <hr>
-
         <div class="control-group-checkbox">
             <input type="checkbox" id="dualMode" checked>
             <label for="dualMode">👐 Doble Mano</label>
         </div>
-
         <div class="control-group-checkbox">
             <input type="checkbox" id="gestureSize">
             <label for="gestureSize">📏 Estirar con Manos</label>
         </div>
+    </div>
+
+    <div id="games-container" class="hidden">
+        <h3>🕹️ Zona de Juegos</h3>
         
-        <button id="startQuizBtn" class="full-width highlight-btn">🎮 Iniciar Reto STEAM</button>
+        <button id="gameNone" class="game-btn active">🕊️ Modo Libre</button>
+        <p class="desc">Solo explora y visualiza figuras.</p>
+
+        <button id="gameQuiz" class="game-btn">🧠 Quiz Geométrico</button>
+        <p class="desc">Invoca la figura que se te pide.</p>
+        
+        <button id="gameSculpt" class="game-btn">📐 Escultor de Tamaño</button>
+        <p class="desc">Usa tus manos para igualar el tamaño meta.</p>
+
+        <button id="gamePaint" class="game-btn">🎨 Pintor Aéreo</button>
+        <p class="desc">Dibuja en el aire con las figuras.</p>
+        
+        <hr>
+        <button id="clearPaintBtn" class="full-width">Borrar Dibujo</button>
     </div>
 
     <div class="canvas-container"></div>
