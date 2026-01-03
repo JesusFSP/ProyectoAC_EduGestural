@@ -3,8 +3,8 @@ let handPose, video, hands = [];
 let figureName = "Cubo"; 
 let paintLayer;
 
-// --- LÍMITES DE PANTALLA (Caja Invisible) ---
-let minX, maxX, minY, maxY; // Coordenadas exactas del límite
+// --- LÍMITES DE PANTALLA ---
+let minX, maxX, minY, maxY; 
 let boundaryDepth = 400;
 
 // Texturas
@@ -14,19 +14,22 @@ let useTexture = false;
 // Estado del Juego
 let gameMode = "NONE";
 let score = 0;
-const FIGURES = ["Cubo", "Esfera", "Cono", "Cilindro", "Toro"];
+const FIGURES = ["Cubo", "Esfera", "Cono", "Cilindro", "Dona"];
 
 // QUIZ
 let quizTarget = "";
 let currentQuestionAnswered = false;
 
-// SCULPT (Escultor)
+// SCULPT
 let targetSize = 0;
 let sculptTargetFigure = "Cubo"; 
 let ghostX = 0; 
 let ghostY = 0; 
 let sculptTolerance = 15;
 let sculptTimer = 0;
+
+// AUDIO CONTEXT (Sonidos Sintetizados)
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function setup() {
   let canvas = createCanvas(windowWidth, windowHeight, WEBGL);
@@ -36,8 +39,7 @@ function setup() {
   paintLayer = createGraphics(windowWidth, windowHeight);
   paintLayer.clear();
 
-  calculateBoundaries(); // Calcular los nuevos márgenes asimétricos
-
+  calculateBoundaries(); 
   createTextures();
 
   video = createCapture(VIDEO);
@@ -61,7 +63,6 @@ function modelReady() {
 function gotHands(results) { hands = results; }
 
 function draw() {
-  // 1. DIBUJAR FONDO
   push();
   translate(-width / 2, -height / 2);
   translate(width, 0);
@@ -70,29 +71,13 @@ function draw() {
   if (gameMode === "PAINT") image(paintLayer, 0, 0, width, height);
   pop();
 
-  // --- DIBUJAR LÍMITE (Invisible / Debug) ---
-  // Si quisieras verlo para probar, descomenta estas líneas:
-  /*
-  push();
-  noFill();
-  stroke(255, 0, 0); 
-  strokeWeight(2);
-  let boundaryW = maxX - minX;
-  let boundaryH = maxY - minY;
-  let centerY = (minY + maxY) / 2; // El centro ya no es 0, está desplazado
-  translate(0, centerY, 0);
-  box(boundaryW, boundaryH, boundaryDepth);
-  pop();
-  */
-
-  // 2. LÓGICA DE JUEGOS
   switch (gameMode) {
       case "QUIZ": updateQuizGame(); break;
       case "SCULPT": updateSculptGame(); break;
       case "PAINT": updatePaintGame(); break;
   }
 
-  // 3. INTERACCIÓN (Gestos)
+  // INTERACCIÓN
   let dualModeEl = document.getElementById("dualMode");
   let gestureSizeEl = document.getElementById("gestureSize");
   let sizeSliderEl = document.getElementById("sizeSlider");
@@ -102,7 +87,6 @@ function draw() {
   let currentSize = sizeSliderEl ? parseInt(sizeSliderEl.value) : 50;
   let padding = currentSize / 2; 
 
-  // --- GESTO DE ESTIRAR ---
   if (isGestureSize && hands.length >= 2) {
       let p1 = hands[0].keypoints[9];
       let p2 = hands[1].keypoints[9];
@@ -114,15 +98,11 @@ function draw() {
 
           let midX = (p1.x + p2.x) / 2;
           let midY = (p1.y + p2.y) / 2;
-
-          // Mapeo inicial
           let boundaryW = maxX - minX;
           let boundaryH = maxY - minY;
-          
           let x = map(midX, 0, video.width, -boundaryW/2, boundaryW/2) * -1;
           let y = map(midY, 0, video.height, -boundaryH/2, boundaryH/2);
           
-          // RESTRICCIÓN ASIMÉTRICA
           x = constrain(x, minX + padding, maxX - padding);
           y = constrain(y, minY + padding, maxY - padding);
 
@@ -131,30 +111,23 @@ function draw() {
       }
   }
 
-  // --- DIBUJO ESTÁNDAR ---
   if (!gestureActive && hands.length > 0) {
     let handsToDraw = isDualMode ? hands.length : 1;
     for (let i = 0; i < handsToDraw; i++) {
         let hand = hands[i];
         if (hand.keypoints && hand.keypoints[9]) {
-            // Mapeo directo para movimiento fluido
-            // Mapeamos de coordenadas Video (0-640) a coordenadas Canvas (-W/2 a W/2)
             let x = map(hand.keypoints[9].x, 0, video.width, -width/2, width/2) * -1;
             let y = map(hand.keypoints[9].y, 0, video.height, -height/2, height/2);
-            
-            // APLICAR LÍMITES ("JAULA")
             x = constrain(x, minX + padding, maxX - padding);
             y = constrain(y, minY + padding, maxY - padding);
-
             drawFigure(x, y, 0);
         }
     }
   }
 }
 
-// --- LOGICA DE JUEGOS ---
+// --- JUEGOS ---
 
-// JUEGO 1: QUIZ
 function startQuiz() {
     score = 0;
     currentQuestionAnswered = false;
@@ -174,6 +147,9 @@ function updateQuizGame() {
     if (hands.length > 0 && figureName === quizTarget) {
         score += 10;
         currentQuestionAnswered = true;
+        
+        playSound("success"); // SONIDO DE ÉXITO
+
         document.getElementById("hud-score").innerText = "Puntos: " + score;
         document.getElementById("hud-feedback").innerText = "¡CORRECTO! 🎉";
         document.getElementById("hud-feedback").style.color = "#00ff00";
@@ -181,7 +157,6 @@ function updateQuizGame() {
     }
 }
 
-// JUEGO 2: ESCULTOR
 function startSculpt() {
     score = 0;
     document.getElementById("sizeSlider").value = 50; 
@@ -193,7 +168,6 @@ function nextSculptTarget() {
     targetSize = random(40, 160);
     sculptTargetFigure = FIGURES[Math.floor(Math.random() * FIGURES.length)];
     
-    // Generar fantasma DENTRO de los límites asimétricos
     let margin = targetSize / 2 + 10; 
     ghostX = random(minX + margin, maxX - margin);
     ghostY = random(minY + margin, maxY - margin);
@@ -211,7 +185,6 @@ function updateSculptGame() {
     strokeWeight(1);
     rotateX(frameCount * 0.01);
     rotateY(frameCount * 0.01);
-    
     drawGhostFigure(sculptTargetFigure, targetSize);
     pop();
 
@@ -226,6 +199,7 @@ function updateSculptGame() {
 
         if (sculptTimer > 60) { 
             score++;
+            playSound("levelup"); // SONIDO DE NIVEL
             document.getElementById("hud-score").innerText = "Aciertos: " + score;
             document.getElementById("hud-feedback").innerText = "¡EXCELENTE! ✅";
             document.getElementById("hud-feedback").style.color = "#00ff00";
@@ -250,12 +224,11 @@ function drawGhostFigure(figName, size) {
         case "Esfera": sphere(size/1.5); break;
         case "Cono": cone(size/2, size); break;
         case "Cilindro": cylinder(size/2, size); break;
-        case "Toro": torus(size/2, size/4); break;
+        case "Dona": torus(size/2, size/4); break;
         case "Cuadrado": plane(size); break;
     }
 }
 
-// JUEGO 3: PINTOR
 function startPaint() {
     paintLayer.clear();
     updateHUD("🎨 Pintor Aéreo", "", "Dibuja en el espacio libre");
@@ -265,19 +238,14 @@ function updatePaintGame() {
     if (hands.length > 0) {
         let hand = hands[0];
         if (hand.keypoints && hand.keypoints[8]) { 
-            // 1. Mapeo a pantalla completa
             let x = map(hand.keypoints[8].x, 0, video.width, 0, width); 
             let y = map(hand.keypoints[8].y, 0, video.height, 0, height);
-            
             let size = parseInt(document.getElementById("sizeSlider").value) / 2;
-            
-            // 2. Convertir límites WEBGL (centro 0,0) a coordenadas de Pintura P5 (esquina 0,0)
             let limitLeft = (width/2) + minX;
             let limitRight = (width/2) + maxX;
             let limitTop = (height/2) + minY;
             let limitBottom = (height/2) + maxY;
 
-            // 3. Restringir
             x = constrain(x, limitLeft + size, limitRight - size);
             y = constrain(y, limitTop + size, limitBottom - size);
 
@@ -291,26 +259,51 @@ function updatePaintGame() {
 
 // --- UTILIDADES ---
 
-function calculateBoundaries() {
-    // MÁRGENES ASIMÉTRICOS (Lo que pediste)
-    let sideMargin = 260; 
-    let topMargin = 20;     // Muy pequeño arriba
-    let bottomMargin = 160; // Grande abajo para el HUD
+// SISTEMA DE SONIDO SINTETIZADO (Sin archivos externos)
+function playSound(type) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    let oscillator = audioCtx.createOscillator();
+    let gainNode = audioCtx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    if (type === "success") {
+        // Sonido agudo y alegre (Ding!)
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.5);
+    } 
+    else if (type === "levelup") {
+        // Sonido de power-up (Tu-ru-ru!)
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+        oscillator.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+        oscillator.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.2);
+        gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.4);
+    }
+}
 
-    // ANCHO (Simétrico)
+function calculateBoundaries() {
+    let sideMargin = 260; 
+    let topMargin = 20;     
+    let bottomMargin = 160; 
+
     let wAvailable = width - (sideMargin * 2);
     if (wAvailable < 300) wAvailable = width * 0.9;
     
-    // Calculamos minX y maxX desde el centro (0)
     minX = -wAvailable / 2;
     maxX = wAvailable / 2;
-
-    // ALTO (Asimétrico)
-    // En WEBGL: 
-    // -height/2 es el borde SUPERIOR
-    // height/2 es el borde INFERIOR
-    minY = (-height / 2) + topMargin;     // Borde Sup + 20px
-    maxY = (height / 2) - bottomMargin;   // Borde Inf - 160px
+    minY = (-height / 2) + topMargin;    
+    maxY = (height / 2) - bottomMargin;   
 }
 
 function drawFigure(x, y, z) {
@@ -340,9 +333,8 @@ function drawFigure(x, y, z) {
     case "Cubo": box(baseSize); break;
     case "Cilindro": cylinder(baseSize / 2, baseSize); break;
     case "Cono": cone(baseSize / 2, baseSize); break;
-    case "Toro": torus(baseSize / 2, baseSize / 4); break;
+    case "Dona": torus(baseSize / 2, baseSize / 4); break;
     case "Esfera": sphere(baseSize / 1.5); break;
-    case "None": break;
   }
   pop();
 }
@@ -363,7 +355,7 @@ function createTextures() {
     let brick = createGraphics(200, 200);
     brick.background(178, 34, 34); brick.stroke(200);
     for(let y=0; y<200; y+=20) for(let x=0; x<200; x+=40) brick.rect(x+(y%40==0?0:20), y, 40, 20);
-    textures["Cilindro"] = brick; textures["Cono"] = brick; textures["Toro"] = brick;
+    textures["Cilindro"] = brick; textures["Cono"] = brick; textures["Dona"] = brick; 
 }
 
 function updateHUD(title, scoreText, feedback) {
@@ -402,6 +394,12 @@ function setupUI() {
     document.getElementById("gamePaint").addEventListener("click", () => setGame("PAINT", "gamePaint"));
     
     document.getElementById("clearPaintBtn").addEventListener("click", () => paintLayer.clear());
+    
+    // CAPTURA DE PANTALLA
+    document.getElementById("screenshotBtn").addEventListener("click", () => {
+        saveCanvas('mi_arte_ar', 'png');
+        playSound("success"); // Feedback de sonido al tomar foto
+    });
 
     document.querySelectorAll(".figureButton").forEach((button) => {
         button.addEventListener("click", (event) => {
