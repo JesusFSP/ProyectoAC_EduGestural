@@ -3,8 +3,8 @@ let handPose, video, hands = [];
 let figureName = "Cubo"; 
 let paintLayer;
 
-// --- LÍMITE (Invisible ahora) ---
-let boundaryW, boundaryH; 
+// --- LÍMITES DE PANTALLA (Caja Invisible) ---
+let minX, maxX, minY, maxY; // Coordenadas exactas del límite
 let boundaryDepth = 400;
 
 // Texturas
@@ -36,7 +36,7 @@ function setup() {
   paintLayer = createGraphics(windowWidth, windowHeight);
   paintLayer.clear();
 
-  calculateBoundaries(); 
+  calculateBoundaries(); // Calcular los nuevos márgenes asimétricos
 
   createTextures();
 
@@ -70,11 +70,17 @@ function draw() {
   if (gameMode === "PAINT") image(paintLayer, 0, 0, width, height);
   pop();
 
-  // --- DIBUJAR LÍMITE (DESACTIVADO VISUALMENTE) ---
-  /* push();
+  // --- DIBUJAR LÍMITE (Invisible / Debug) ---
+  // Si quisieras verlo para probar, descomenta estas líneas:
+  /*
+  push();
   noFill();
-  stroke(255, 215, 0); // Amarillo Dorado
-  strokeWeight(4);
+  stroke(255, 0, 0); 
+  strokeWeight(2);
+  let boundaryW = maxX - minX;
+  let boundaryH = maxY - minY;
+  let centerY = (minY + maxY) / 2; // El centro ya no es 0, está desplazado
+  translate(0, centerY, 0);
   box(boundaryW, boundaryH, boundaryDepth);
   pop();
   */
@@ -109,14 +115,16 @@ function draw() {
           let midX = (p1.x + p2.x) / 2;
           let midY = (p1.y + p2.y) / 2;
 
-          // Restricción al cuadro límite (Invisible)
-          let halfBW = boundaryW / 2;
-          let halfBH = boundaryH / 2;
-          let x = map(midX, 0, video.width, -halfBW, halfBW) * -1;
-          let y = map(midY, 0, video.height, -halfBH, halfBH);
+          // Mapeo inicial
+          let boundaryW = maxX - minX;
+          let boundaryH = maxY - minY;
           
-          x = constrain(x, -halfBW + padding, halfBW - padding);
-          y = constrain(y, -halfBH + padding, halfBH - padding);
+          let x = map(midX, 0, video.width, -boundaryW/2, boundaryW/2) * -1;
+          let y = map(midY, 0, video.height, -boundaryH/2, boundaryH/2);
+          
+          // RESTRICCIÓN ASIMÉTRICA
+          x = constrain(x, minX + padding, maxX - padding);
+          y = constrain(y, minY + padding, maxY - padding);
 
           drawFigure(x, y, 0);
           gestureActive = true; 
@@ -129,13 +137,14 @@ function draw() {
     for (let i = 0; i < handsToDraw; i++) {
         let hand = hands[i];
         if (hand.keypoints && hand.keypoints[9]) {
-            let halfBW = boundaryW / 2;
-            let halfBH = boundaryH / 2;
-            let x = map(hand.keypoints[9].x, 0, video.width, -halfBW, halfBW) * -1;
-            let y = map(hand.keypoints[9].y, 0, video.height, -halfBH, halfBH);
+            // Mapeo directo para movimiento fluido
+            // Mapeamos de coordenadas Video (0-640) a coordenadas Canvas (-W/2 a W/2)
+            let x = map(hand.keypoints[9].x, 0, video.width, -width/2, width/2) * -1;
+            let y = map(hand.keypoints[9].y, 0, video.height, -height/2, height/2);
             
-            x = constrain(x, -halfBW + padding, halfBW - padding);
-            y = constrain(y, -halfBH + padding, halfBH - padding);
+            // APLICAR LÍMITES ("JAULA")
+            x = constrain(x, minX + padding, maxX - padding);
+            y = constrain(y, minY + padding, maxY - padding);
 
             drawFigure(x, y, 0);
         }
@@ -184,9 +193,10 @@ function nextSculptTarget() {
     targetSize = random(40, 160);
     sculptTargetFigure = FIGURES[Math.floor(Math.random() * FIGURES.length)];
     
+    // Generar fantasma DENTRO de los límites asimétricos
     let margin = targetSize / 2 + 10; 
-    ghostX = random(-boundaryW/2 + margin, boundaryW/2 - margin);
-    ghostY = random(-boundaryH/2 + margin, boundaryH/2 - margin);
+    ghostX = random(minX + margin, maxX - margin);
+    ghostY = random(minY + margin, maxY - margin);
     
     sculptTimer = 0;
     document.getElementById("hud-feedback").innerText = `¡Crea un ${sculptTargetFigure.toUpperCase()}!`;
@@ -194,7 +204,6 @@ function nextSculptTarget() {
 }
 
 function updateSculptGame() {
-    // Dibujar Fantasma (Meta)
     push();
     translate(ghostX, ghostY, 0); 
     noFill();
@@ -249,33 +258,28 @@ function drawGhostFigure(figName, size) {
 // JUEGO 3: PINTOR
 function startPaint() {
     paintLayer.clear();
-    // Borde guía desactivado
-    /*
-    paintLayer.push();
-    paintLayer.noFill();
-    paintLayer.stroke(255, 255, 0, 50);
-    paintLayer.strokeWeight(2);
-    let marginX = (width - boundaryW) / 2;
-    let marginY = (height - boundaryH) / 2;
-    paintLayer.rect(marginX, marginY, boundaryW, boundaryH);
-    paintLayer.pop();
-    */
-    updateHUD("🎨 Pintor Aéreo", "", "Dibuja dentro del cuadro invisible");
+    updateHUD("🎨 Pintor Aéreo", "", "Dibuja en el espacio libre");
 }
 
 function updatePaintGame() {
     if (hands.length > 0) {
         let hand = hands[0];
         if (hand.keypoints && hand.keypoints[8]) { 
+            // 1. Mapeo a pantalla completa
             let x = map(hand.keypoints[8].x, 0, video.width, 0, width); 
             let y = map(hand.keypoints[8].y, 0, video.height, 0, height);
             
-            let marginX = (width - boundaryW) / 2;
-            let marginY = (height - boundaryH) / 2;
             let size = parseInt(document.getElementById("sizeSlider").value) / 2;
             
-            x = constrain(x, marginX + size, width - marginX - size);
-            y = constrain(y, marginY + size, height - marginY - size);
+            // 2. Convertir límites WEBGL (centro 0,0) a coordenadas de Pintura P5 (esquina 0,0)
+            let limitLeft = (width/2) + minX;
+            let limitRight = (width/2) + maxX;
+            let limitTop = (height/2) + minY;
+            let limitBottom = (height/2) + maxY;
+
+            // 3. Restringir
+            x = constrain(x, limitLeft + size, limitRight - size);
+            y = constrain(y, limitTop + size, limitBottom - size);
 
             let color = document.getElementById("colorPicker").value;
             paintLayer.noStroke();
@@ -288,15 +292,25 @@ function updatePaintGame() {
 // --- UTILIDADES ---
 
 function calculateBoundaries() {
+    // MÁRGENES ASIMÉTRICOS (Lo que pediste)
     let sideMargin = 260; 
-    let topMargin = 80;   
-    let bottomMargin = 120; 
+    let topMargin = 20;     // Muy pequeño arriba
+    let bottomMargin = 160; // Grande abajo para el HUD
 
-    boundaryW = width - (sideMargin * 2);
-    if (boundaryW < 300) boundaryW = width * 0.9;
+    // ANCHO (Simétrico)
+    let wAvailable = width - (sideMargin * 2);
+    if (wAvailable < 300) wAvailable = width * 0.9;
+    
+    // Calculamos minX y maxX desde el centro (0)
+    minX = -wAvailable / 2;
+    maxX = wAvailable / 2;
 
-    boundaryH = height - (topMargin + bottomMargin);
-    if (boundaryH < 300) boundaryH = height * 0.8;
+    // ALTO (Asimétrico)
+    // En WEBGL: 
+    // -height/2 es el borde SUPERIOR
+    // height/2 es el borde INFERIOR
+    minY = (-height / 2) + topMargin;     // Borde Sup + 20px
+    maxY = (height / 2) - bottomMargin;   // Borde Inf - 160px
 }
 
 function drawFigure(x, y, z) {
