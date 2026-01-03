@@ -20,23 +20,18 @@ function setup() {
     maxHands: 2
   };
 
-  // Inicializar modelo
   handPose = ml5.handPose(options, modelReady);
-  
   setupUI();
 }
 
 function modelReady() {
   console.log("Modelo listo! Iniciando detección...");
-  
   const loadingScreen = document.getElementById("loading-model-message-container");
   if(loadingScreen) loadingScreen.style.display = "none";
 
-  // Retraso de seguridad para evitar error "model is null"
   setTimeout(() => {
       if(handPose) {
         handPose.detectStart(video, gotHands);
-        console.log("Detección iniciada.");
       }
   }, 500);
 }
@@ -50,64 +45,50 @@ function draw() {
   push();
   translate(-width / 2, -height / 2);
   translate(width, 0);
-  scale(-1, 1); // Espejo
+  scale(-1, 1);
   image(video, 0, 0, width, height); 
   pop();
 
-  // Obtenemos elementos HTML
+  // Variables UI
   let dualModeEl = document.getElementById("dualMode");
   let gestureSizeEl = document.getElementById("gestureSize");
   let sizeSliderEl = document.getElementById("sizeSlider");
 
   let isDualMode = dualModeEl ? dualModeEl.checked : true;
   let isGestureSize = gestureSizeEl ? gestureSizeEl.checked : false;
+  
+  let gestureActive = false;
 
-  // --- LÓGICA DE ESTIRAR (GESTOS) ---
+  // --- LÓGICA DE ESTIRAR Y CENTRAR (SIN LÍNEA AMARILLA) ---
   if (isGestureSize && hands.length >= 2) {
-      // Usamos el punto 9 (centro palma)
       let p1 = hands[0].keypoints[9];
       let p2 = hands[1].keypoints[9];
 
       if (p1 && p2) {
-          // Calculamos distancia (en píxeles del video original)
+          // A. Calcular Distancia (Tamaño)
           let distance = dist(p1.x, p1.y, p2.x, p2.y);
-
-          // --- CORRECCIÓN MATEMÁTICA PARA WEBGL ---
-          // Mapeamos las coordenadas de video (0-640) al canvas 3D (-width/2 a width/2)
-          let x1 = map(p1.x, 0, video.width, -width/2, width/2);
-          let y1 = map(p1.y, 0, video.height, -height/2, height/2);
-          let x2 = map(p2.x, 0, video.width, -width/2, width/2);
-          let y2 = map(p2.y, 0, video.height, -height/2, height/2);
-
-          // Invertimos X para el efecto espejo
-          x1 *= -1;
-          x2 *= -1;
-
-          // Dibujamos la línea amarilla
-         
-          // Dibujamos puntos rojos en las manos para confirmar que las detecta
-          noStroke();
-          fill(255, 0, 0);
-          translate(0,0,10); // Un poco hacia el frente
-          push(); translate(x1, y1); sphere(10); pop();
-          push(); translate(x2, y2); sphere(10); pop();
-          pop();
-
-          // Actualizamos tamaño basado en distancia
-          // 50px de distancia = tamaño 20
-          // 400px de distancia = tamaño 300
           let newSize = map(distance, 50, 400, 20, 300);
           newSize = constrain(newSize, 20, 300);
+          if (sizeSliderEl) sizeSliderEl.value = newSize;
 
-          // Movemos el slider automáticamente
-          if (sizeSliderEl) {
-              sizeSliderEl.value = newSize;
-          }
+          // B. Calcular PUNTO MEDIO (Posición)
+          let midX = (p1.x + p2.x) / 2;
+          let midY = (p1.y + p2.y) / 2;
+
+          // C. Mapear coordenadas al Canvas
+          let x = map(midX, 0, video.width, -width/2, width/2);
+          let y = map(midY, 0, video.height, -height/2, height/2);
+          x *= -1; // Espejo
+
+          // D. Dibujar la figura en el CENTRO
+          drawFigure(x, y, 0);
+          
+          gestureActive = true; 
       }
   }
 
-  // 2. Dibujar Figuras
-  if (hands.length > 0) {
+  // 2. Dibujo Estándar (Solo si NO está activo el gesto central)
+  if (!gestureActive && hands.length > 0) {
     let handsToDraw = isDualMode ? hands.length : 1;
 
     for (let i = 0; i < handsToDraw; i++) {
@@ -118,7 +99,7 @@ function draw() {
             
             let x = map(handX, 0, video.width, -width / 2, width / 2);
             let y = map(handY, 0, video.height, -height / 2, height / 2);
-            x = x * -1; // Espejo
+            x = x * -1; 
 
             drawFigure(x, y, 0);
         }
