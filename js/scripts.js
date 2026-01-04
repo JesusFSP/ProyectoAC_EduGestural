@@ -64,11 +64,11 @@ function gotHands(results) { hands = results; }
 
 function draw() {
   push();
-  translate(-width / 2, -height / 2);
+  translate(-width / 2, -height / 2); // Mover el origen al centro
   translate(width, 0);
-  scale(-1, 1);
-  image(video, 0, 0, width, height); 
-  if (gameMode === "PAINT") image(paintLayer, 0, 0, width, height);
+  scale(-1, 1); // Efecto ESPEJO (invertir eje X)
+  image(video, 0, 0, width, height); // Dibujar el video de la cámara
+  if (gameMode === "PAINT") image(paintLayer, 0, 0, width, height); // Superponer el dibujo si estamos pintando
   pop();
 
   switch (gameMode) {
@@ -92,7 +92,7 @@ function draw() {
       let p2 = hands[1].keypoints[9];
       if (p1 && p2) {
           let distance = dist(p1.x, p1.y, p2.x, p2.y);
-          let newSize = map(distance, 50, 400, 20, 300);
+          let newSize = map(distance, 50, 400, 20, 300); //Usamos map() para convertir esa distancia en píxeles
           newSize = constrain(newSize, 20, 300);
           if (sizeSliderEl) sizeSliderEl.value = newSize;
 
