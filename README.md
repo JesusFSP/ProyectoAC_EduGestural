@@ -1,10 +1,9 @@
-# EduGestural: Entorno de Aprendizaje Kinestésico Mediante Realidad Aumentada 🎓✋
+# EduGestural: Entorno de Aprendizaje Kinestésico Mediante Realidad Aumentada 
 
 **EduGestural** es una aplicación web progresiva de Realidad Aumentada (RA) diseñada para la educación STEAM y el desarrollo de la motricidad fina. Utiliza algoritmos de visión artificial en el navegador para permitir a los usuarios manipular objetos 3D y participar en actividades lúdicas utilizando únicamente los gestos de sus manos, sin necesidad de hardware costoso o periféricos tradicionales.
 
-![Captura del Proyecto](proy.jpg)
 
-## 🚀 Características Principales
+## Características Principales
 
 * **Interacción Natural (NUI):** Control total mediante gestos manuales (detección de 21 puntos clave por mano).
 * **Motor 3D Web:** Renderizado fluido de sólidos platónicos y figuras geométricas con texturas procedimentales.
@@ -15,14 +14,14 @@
 * **Interfaz Adaptativa:** Sistema de "Jaula Invisible" que ajusta el área de juego para no obstruir los controles en diferentes resoluciones.
 * **Feedback Multimedia:** Efectos de sonido sintetizados en tiempo real y sistema de captura de pantalla.
 
-## 🛠️ Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 * **HTML5 / CSS3:** Estructura semántica y diseño responsivo moderno.
 * **JavaScript (ES6+):** Lógica del núcleo y gestión de estados.
 * **[p5.js](https://p5js.org/):** Librería principal para el renderizado gráfico y manejo del canvas WebGL.
 * **[ml5.js](https://ml5js.org/):** Implementación del modelo **HandPose** (basado en MediaPipe de Google) para la detección de manos mediante Machine Learning en el cliente.
 
-## 📋 Requisitos del Sistema
+## Requisitos del Sistema
 
 Para ejecutar el proyecto localmente o en producción:
 
@@ -35,7 +34,7 @@ Para ejecutar el proyecto localmente o en producción:
 * **Navegador:** Mozilla Firefox (v120+) o Google Chrome (v110+).
 * **Servidor Local:** Python 3.x (para evitar errores de CORS con los módulos ES6).
 
-## 🔧 Instalación y Ejecución
+## Instalación y Ejecución
 
 1.  **Clonar el repositorio:**
     ```bash
@@ -57,7 +56,7 @@ Para ejecutar el proyecto localmente o en producción:
 4.  **Permisos:**
     Acepta el permiso de uso de la cámara web cuando el navegador lo solicite.
 
-## 🎮 Guía de Uso
+## Guía de Uso
 
 1.  **Menú Izquierdo (Configuración):**
     * Selecciona la figura geométrica (Cubo, Esfera, Dona, etc.).
